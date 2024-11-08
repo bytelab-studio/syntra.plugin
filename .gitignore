@@ -1,0 +1,5 @@
+.idea
+dec
+node_modules
+out
+*.tgz
