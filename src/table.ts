@@ -42,12 +42,20 @@ export class Table implements Serializable {
         this.deleteLevel = deleteLevel;
     }
 
-    public serialize(data: Map<string, unknown>): any {
-        throw "Method not implemented";
+    public serialize(data: Record<string, any>): void {
+        for (const column of this.getColumns()) {
+            const name: string = column.getColumnName();
+            const type: SQLType = column.getColumnType();
+
+            const value: any | undefined = data[name];
+            if (typeof value == "undefined") {
+                column.setValue(null);
+            }
+            column.setValue(type.import(value));
+        }
     }
 
-    public deserialize(): any {
-        // TODO check for private values
+    public deserialize(): object {
         const obj: Record<string, any> = {};
 
         for (const column of this.getColumns()) {
@@ -61,7 +69,7 @@ export class Table implements Serializable {
                     obj[column.refTable.tableName] = column.getValue().deserialize();
                 }
             } else {
-                obj[column.getColumnName()] = column.getValue();
+                obj[column.getColumnName()] = column.getColumnType().export(column.getValue());
             }
         }
 

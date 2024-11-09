@@ -77,6 +77,47 @@ export class SQLType {
             return false;
         }
     }
+
+    public export(value: any): string | number | boolean | null {
+        if (!this.validate(value)) {
+            return null;
+        }
+        if (this.group == SQLTypeGroup.DATE) {
+            const date: Date = value;
+            return `${date.getUTCFullYear()}-${date.getUTCMonth() + 1}-${date.getUTCDate()}`;
+        } else if (this.group == SQLTypeGroup.TIME) {
+            const date: Date = value;
+            return `${date.getUTCHours()}:${date.getUTCMinutes()}:${date.getUTCSeconds()}`;
+        } else if (this.group == SQLTypeGroup.DATETIME) {
+            const date: Date = value;
+            return `${date.getUTCFullYear()}-${date.getUTCMonth() + 1}-${date.getUTCDate()} ${date.getUTCHours()}:${date.getUTCMinutes()}:${date.getUTCSeconds()}`;
+        }
+
+        return value;
+    }
+
+    public import(value: any): [string | null, any] {
+        if (this.group == SQLTypeGroup.DATE) {
+            const date: Date = new Date(value);
+            if (isNaN(date.valueOf())) {
+                return ["Wrong Date format", null];
+            }
+            return [null, date];
+        } else if (this.group == SQLTypeGroup.TIME) {
+            const date: Date = new Date(value);
+            if (isNaN(date.valueOf())) {
+                return ["Wrong Time format", null];
+            }
+            return [null, date];
+        } else if (this.group == SQLTypeGroup.DATETIME) {
+            const date: Date = new Date(value);
+            if (isNaN(date.valueOf())) {
+                return ["Wrong Datetime format", null];
+            }
+        }
+
+        return [null, value];
+    }
 }
 
 export class VarChar extends SQLType {

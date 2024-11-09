@@ -1,5 +1,5 @@
 export interface Serializable {
-    serialize(data: Map<string, unknown>): any;
+    serialize(data: Record<string, any>): void;
 
-    deserialize(): any;
+    deserialize(): object;
 }
