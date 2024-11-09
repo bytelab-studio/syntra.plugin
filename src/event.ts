@@ -1,15 +1,19 @@
+import type {Table} from "./table";
+
 export class Event {
     beforeCreate: EventHolder<Function> = new EventHolder<Function>();
     afterCreate: EventHolder<Function> = new EventHolder<Function>();
     beforeSelect: EventHolder<Function> = new EventHolder<Function>();
-    afterSelect: EventHolder<Function> = new EventHolder<Function>();
-    beforeInsert: EventHolder<Function> = new EventHolder<Function>();
-    afterInsert: EventHolder<Function> = new EventHolder<Function>();
-    beforeUpdate: EventHolder<Function> = new EventHolder<Function>();
-    afterUpdate: EventHolder<Function> = new EventHolder<Function>();
-    beforeDelete: EventHolder<Function> = new EventHolder<Function>();
-    afterDelete: EventHolder<Function> = new EventHolder<Function>();
+    afterSelect: EventHolder<(rows: Table[] | [Table | null]) => void> = new EventHolder<(rows: Table[] | [Table | null]) => void>();
+    beforeInsert: EventHolder<(row: Table) => void> = new EventHolder<(row: Table) => void>();
+    afterInsert: EventHolder<(row: Table) => void> = new EventHolder<(row: Table) => void>();
+    beforeUpdate: EventHolder<(row: Table) => void> = new EventHolder<(row: Table) => void>();
+    afterUpdate: EventHolder<(row: Table) => void> = new EventHolder<(row: Table) => void>();
+    beforeDelete: EventHolder<(row: Table) => void> = new EventHolder<(row: Table) => void>();
+    afterDelete: EventHolder<(row: Table) => void> = new EventHolder<(row: Table) => void>();
 }
+
+type ArgumentTypes<F extends Function> = F extends (...args: infer A) => any ? A : []
 
 export class EventHolder<T extends Function> {
     private readonly onCBs: T[] = [];
@@ -23,7 +27,7 @@ export class EventHolder<T extends Function> {
         this.onceCBs.push(cb);
     }
 
-    public async emit(...args: any[]): Promise<void> {
+    public async emit(...args: ArgumentTypes<T>): Promise<void> {
         for (const cb of this.onCBs) {
             const r = cb(...args);
             if (r instanceof Promise) {

@@ -132,7 +132,9 @@ export class Table implements Serializable {
         permission.deletePermission.setValue(deleteLevel || this.deleteLevel);
         permission.authentication.setValue(auth.primaryKey.getValue());
 
+        await (<TableRef<Table>>this.constructor).events.beforeInsert.emit(this);
         await bridge.insert(this, permission);
+        await (<TableRef<Table>>this.constructor).events.afterInsert.emit(this);
     }
 
     public async update(auth?: Authentication): Promise<void> {
@@ -147,7 +149,9 @@ export class Table implements Serializable {
             throw `Cannot update '${this.tableName}' row because it was never inserted`;
         }
 
+        await (<TableRef<Table>>this.constructor).events.beforeUpdate.emit(this);
         await bridge.update(this);
+        await (<TableRef<Table>>this.constructor).events.afterUpdate.emit(this);
     }
 
     public async delete(auth?: Authentication): Promise<void> {
@@ -161,8 +165,9 @@ export class Table implements Serializable {
         if (!await bridge.rowExist(this)) {
             throw `Cannot delete '${this.tableName}' row because it was never inserted`;
         }
-
+        await (<TableRef<Table>>this.constructor).events.beforeDelete.emit(this);
         await bridge.delete(this);
+        await (<TableRef<Table>>this.constructor).events.afterDelete.emit(this);
     }
 
     public validate(): string[] {
@@ -196,6 +201,7 @@ export class Table implements Serializable {
 
         const table: T = args[0];
         const auth: Authentication | undefined = args[1];
+        await table.events.beforeSelect.emit()
 
         const rows: K[] = [];
         (await bridge.selectAll<T, K>(table)).forEach(row => {
@@ -211,6 +217,7 @@ export class Table implements Serializable {
             }
         });
 
+        await table.events.afterSelect.emit(rows);
         return rows;
     }
 
@@ -226,6 +233,7 @@ export class Table implements Serializable {
         const table: T = args[0];
         const auth: Authentication | undefined = args[1];
         const id: number = args[2];
+        await table.events.beforeSelect.emit();
 
         const row: K | null = await bridge.selectSingle<T, K>(table, id);
         if (!row) {
@@ -243,6 +251,7 @@ export class Table implements Serializable {
             auth.primaryKey.getValue() == row.permission.getValue().authentication.getValue()) {
             return row;
         }
+        await table.events.afterSelect.emit([row]);
 
         return null;
     }
