@@ -1,20 +1,26 @@
 {
     "name": "@bytelab.studio/syntra.plugin",
     "version": "1.0.0",
-    "description": "",
+    "description": "Plugin system for Syntra Servers",
     "main": "./out/index.js",
     "types": "./dec/index.d.ts",
+    "author": "Christoph Koschel",
+    "license": "MIT",
+    "keywords": [
+        "plugin",
+        "api",
+        "rest",
+        "restful",
+        "syntra"
+    ],
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 0"
+    },
+    "devDependencies": {
+        "@types/node": "^22.7.5"
     },
     "files": [
         "out",
         "dec"
-    ],
-    "keywords": [],
-    "author": "",
-    "license": "MIT",
-    "devDependencies": {
-        "@types/node": "^22.7.5"
-    }
+    ]
 }
