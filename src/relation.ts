@@ -9,13 +9,15 @@ export enum RelationLoad {
 
 export abstract class Relation<T extends TableRef<K>, K extends Table> extends Column<K> {
     public readonly refTable: TableRef<K>;
+    public readonly columnRefName: string;
     public readonly loadingMethod: RelationLoad;
     private key: number | null;
 
-    public constructor(table: T, flags: ColumnFlags = ColumnFlags.NONE, loadingMethod: RelationLoad = RelationLoad.DIRECT) {
-        super(SQLType.BIGINT, flags, table.tableName + "_id");
+    public constructor(table: T, flags: ColumnFlags = ColumnFlags.NONE, loadingMethod: RelationLoad = RelationLoad.DIRECT, columnIdName: string = table.tableName + "_id", columnRefName: string = table.tableName) {
+        super(SQLType.BIGINT, flags, columnIdName);
 
         this.refTable = table;
+        this.columnRefName = columnRefName;
         this.loadingMethod = loadingMethod;
         this.key = null;
     }

@@ -107,11 +107,11 @@ export class Table implements Serializable {
                         if (set.has(name)) {
                             throw `Duplicate column name '${name}'`;
                         }
-                        if (set.has(property.refTable.tableName)) {
-                            throw `Duplicate column name '${name}'`;
+                        if (set.has(property.columnRefName)) {
+                            throw `Duplicate column name '${property.columnRefName}'`;
                         }
                         set.add(name);
-                        set.add(property.refTable.tableName);
+                        set.add(property.columnRefName);
                     } else {
                         if (set.has(name)) {
                             throw `Duplicate column name '${name}'`;
