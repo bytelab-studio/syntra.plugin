@@ -51,7 +51,11 @@ export class Table implements Serializable {
             if (typeof value == "undefined") {
                 column.setValue(null);
             }
-            column.setValue(type.import(value));
+            if (column instanceof Relation) {
+                column.setKeyValue(type.import(value) as number | null);
+            } else {
+                column.setValue(type.import(value));
+            }
         }
     }
 

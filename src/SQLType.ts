@@ -98,27 +98,28 @@ export class SQLType {
         return value;
     }
 
-    public import(value: any): [string | null, any] {
+    public import(value: any): any {
         if (this.group == SQLTypeGroup.DATE) {
             const date: Date = new Date(value);
             if (isNaN(date.valueOf())) {
-                return ["Wrong Date format", null];
+                throw "Wrong Datetime format";
             }
-            return [null, date];
+            return date;
         } else if (this.group == SQLTypeGroup.TIME) {
             const date: Date = new Date(value);
             if (isNaN(date.valueOf())) {
-                return ["Wrong Time format", null];
+                throw "Wrong Datetime format";
             }
-            return [null, date];
+            return date;
         } else if (this.group == SQLTypeGroup.DATETIME) {
             const date: Date = new Date(value);
             if (isNaN(date.valueOf())) {
-                return ["Wrong Datetime format", null];
+                throw "Wrong Datetime format";
             }
+            return date;
         }
 
-        return [null, value];
+        return value
     }
 }
 
