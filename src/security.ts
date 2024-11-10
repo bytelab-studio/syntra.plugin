@@ -44,9 +44,9 @@ export class Authentication extends Table {
     }
 }
 
-Permission.routes.enableCreateRoute = false;
-Permission.routes.enableUpdateRoute = false;
-Permission.routes.enableDeleteRoute = false;
+Authentication.routes.enableCreateRoute = false;
+Authentication.routes.enableUpdateRoute = false;
+Authentication.routes.enableDeleteRoute = false;
 
 Authentication.events.afterCreate.on(async () => {
     await Authentication.root.insert(Authentication.root);
