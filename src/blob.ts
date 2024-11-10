@@ -69,7 +69,7 @@ Resource.routes.post(builder => {
     });
 })
 
-export class ResourceColumn extends Relation1T1<typeof Resource, Resource> {
+export class ResourceColumn extends Relation1T1<Resource> {
     public constructor(flags: ColumnFlags = ColumnFlags.NONE, loadingMethod: RelationLoad = RelationLoad.DIRECT) {
         super(Resource, flags, loadingMethod);
     }

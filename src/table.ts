@@ -28,7 +28,7 @@ export class Table implements Serializable {
     public readonly deleteLevel: PermissionLevel;
 
     public readonly primaryKey: PrimaryColumn;
-    public readonly permission: Relation1T1<typeof Permission, Permission>;
+    public readonly permission: Relation1T1<Permission>;
 
     public get tableName(): string {
         return toSQLFriendly(this.constructor.name);
@@ -36,7 +36,7 @@ export class Table implements Serializable {
 
     protected constructor(readLevel: PermissionLevel = PermissionLevel.USER, writeLevel: PermissionLevel = PermissionLevel.USER, deleteLevel: PermissionLevel = PermissionLevel.USER) {
         this.primaryKey = new PrimaryColumn(SQLType.BIGINT, ColumnFlags.AUTO_INCREMENT | ColumnFlags.READONLY, this.tableName + "_id");
-        this.permission = this.tableName != "permission" ? new Relation1T1<typeof Permission, Permission>(Permission, ColumnFlags.READONLY) : undefined as unknown as Relation1T1<typeof Permission, Permission>;
+        this.permission = this.tableName != "permission" ? new Relation1T1<Permission>(Permission, ColumnFlags.READONLY) : undefined as unknown as Relation1T1<Permission>;
         this.readLevel = readLevel;
         this.writeLevel = writeLevel;
         this.deleteLevel = deleteLevel;
@@ -48,12 +48,15 @@ export class Table implements Serializable {
             const type: SQLType = column.getColumnType();
 
             const value: any | undefined = data[name];
-            if (typeof value == "undefined") {
-                column.setValue(null);
-            }
             if (column instanceof Relation) {
+                if (typeof value == "undefined") {
+                    continue;
+                }
                 column.setKeyValue(type.import(value) as number | null);
             } else {
+                if (typeof value == "undefined") {
+                    column.setValue(null);
+                }
                 column.setValue(type.import(value));
             }
         }
@@ -129,7 +132,7 @@ export class Table implements Serializable {
         }
     }
 
-    public* getRelations(): Generator<Relation<TableRef<Table>, Table>> {
+    public* getRelations(): Generator<Relation<Table>> {
         for (const column of this.getColumns()) {
             if (column instanceof Relation) {
                 yield column;
@@ -186,6 +189,15 @@ export class Table implements Serializable {
         const errors: string[] = [];
 
         for (const column of this.getColumns()) {
+            if (column instanceof Relation) {
+                if (column.isKeyNull() && !column.containsFlag(ColumnFlags.NULLABLE) && !(column instanceof PrimaryColumn) && column != this.permission) {
+                    errors.push(`Column '${column.getColumnName()}' cannot be null`);
+                    continue;
+                }
+
+                continue;
+            }
+
             if (column.isNull() && !column.containsFlag(ColumnFlags.NULLABLE) && !(column instanceof PrimaryColumn) && column != this.permission) {
                 errors.push(`Column '${column.getColumnName()}' cannot be null`);
                 continue;
@@ -197,6 +209,21 @@ export class Table implements Serializable {
         }
 
         return errors;
+    }
+
+    public async resolve(auth: Authentication | undefined): Promise<void> {
+        for (const relation of this.getRelations()) {
+            if (relation.loadingMethod != RelationLoad.DIRECT || relation.isKeyNull()) {
+                continue;
+            }
+            if (relation == this.permission) {
+                continue;
+            }
+            const row: Table | null = await relation.refTable.select(auth, relation.getKeyValue());
+            if (!!row) {
+                relation.setValue(row);
+            }
+        }
     }
 
     public static get tableName(): string {
