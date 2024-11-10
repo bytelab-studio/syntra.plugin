@@ -22,5 +22,8 @@
     "files": [
         "out",
         "dec"
-    ]
+    ],
+    "dependencies": {
+        "openapi3-ts": "^4.4.0"
+    }
 }

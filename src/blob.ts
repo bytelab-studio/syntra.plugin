@@ -3,6 +3,7 @@ import {Column, ColumnFlags} from "./column";
 import {SQLType, VarChar} from "./SQLType";
 import {Relation1T1, RelationLoad} from "./relation";
 import {ContentType} from "./routeManager";
+import {SchemaDefinition} from "./schema";
 
 @table()
 export class Resource extends Table {
@@ -21,69 +22,52 @@ Resource.routes.enableCreateRoute = false;
 Resource.routes.enableUpdateRoute = false;
 Resource.routes.enableDeleteRoute = false;
 
-Resource.routes.get(builder =>
-        builder.param("path", "id", SQLType.BIGINT, "PrimaryKey of the fetching resource")
-            .response(200, builder =>
-                builder.contentType("application/octet-stream")
-                    .content("buffer"))
-    , "/:id", async (req, res) => {
-        const id: number | null = req.params.getInt("id");
-        if (!id) {
-            return res.badRequest();
-        }
+Resource.routes.get(builder => {
+    builder.addResponse(200, "buffer", "application/octet-stream")
+}, "/:id", async (req, res) => {
+    const id: number | null = req.params.getInt("id");
+    if (!id) {
+        return res.badRequest();
+    }
 
-        const resource: Resource | null = await Resource.select<TableRef<Resource>, Resource>(req.authorization.auth, id);
-        if (!resource) {
-            return res.notFound();
-        }
-        if (resource.mimeType.isNull() || resource.data.isNull()) {
-            return res.ok(Buffer.from([]), "application/octet-stream");
-        }
+    const resource: Resource | null = await Resource.select<TableRef<Resource>, Resource>(req.authorization.auth, id);
+    if (!resource) {
+        return res.notFound();
+    }
+    if (resource.mimeType.isNull() || resource.data.isNull()) {
+        return res.ok(Buffer.from([]), "application/octet-stream");
+    }
 
-        return res.ok(resource.data.getValue(), resource.mimeType.getValue());
+    return res.ok(resource.data.getValue(), resource.mimeType.getValue());
+});
+
+Resource.routes.post(builder => {
+    builder.setRequestBody("buffer", "*/*")
+    builder.addResponse(200, SchemaDefinition.from("resource_select_res"))
+}, "/", async (req, res) => {
+    if (!req.authorization.valid()) {
+        return res.unauthorized();
+    }
+
+    const content: Buffer = req.body.raw();
+    const contentType: ContentType = req.body.contentType || "application/octet-stream";
+    const length: number = content.length;
+
+    const resource: Resource = new Resource();
+    resource.data.setValue(content);
+    resource.mimeType.setValue(contentType);
+    resource.length.setValue(length);
+
+    await resource.insert(req.authorization.auth!);
+
+    return res.ok({
+        status: 200,
+        count: 1,
+        results: [
+            resource.deserialize()
+        ]
     });
-
-Resource.routes.post(builder =>
-        builder.accept("application/octet-stream")
-            .body("buffer")
-            .response(200, builder =>
-                builder.contentType("application/json")
-                    .content(builder =>
-                        builder.object(builder =>
-                            builder.item("status", builder =>
-                                builder.property(SQLType.INT)
-                            ).item("count", builder =>
-                                builder.property(SQLType.INT)
-                            ).item("results", builder =>
-                                builder.referenceArray(Resource)
-                            )
-                        )
-                    )
-            )
-    , "/", async (req, res) => {
-        if (!req.authorization.valid()) {
-            return res.unauthorized();
-        }
-
-        const content: Buffer = req.body.raw();
-        const contentType: ContentType = req.body.contentType || "application/octet-stream";
-        const length: number = content.length;
-
-        const resource: Resource = new Resource();
-        resource.data.setValue(content);
-        resource.mimeType.setValue(contentType);
-        resource.length.setValue(length);
-
-        await resource.insert(req.authorization.auth!);
-
-        return res.ok({
-            status: 200,
-            count: 1,
-            results: [
-                resource.deserialize()
-            ]
-        });
-    });
+})
 
 export class ResourceColumn extends Relation1T1<typeof Resource, Resource> {
     public constructor(flags: ColumnFlags = ColumnFlags.NONE, loadingMethod: RelationLoad = RelationLoad.DIRECT) {

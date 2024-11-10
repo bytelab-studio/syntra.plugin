@@ -1,7 +1,7 @@
 import {Table, TableRef} from "./table";
 import {Authentication} from "./security";
 import * as math from "./math";
-import {SchemaBodyBuilder, SchemaBuilder} from "./schema";
+import {OpenAPISchemaBuilder} from "./schema";
 
 export type ContentTypeBase =
     | "application"
@@ -81,13 +81,13 @@ export type ResponseContent = {
 };
 
 export type Route = {
-    schema: object;
+    schema: OpenAPISchemaBuilder;
     route: string;
     method: "GET" | "POST" | "PUT" | "DELETE" | "ALL";
     cb: (req: Request, res: Response) => Promise<ResponseContent> | ResponseContent;
 }
 
-type SchemaCallback<T extends SchemaBuilder = SchemaBuilder> = (builder: T) => void;
+type SchemaCallback = (builder: OpenAPISchemaBuilder) => void;
 
 export class RouteManager {
     public enableGetAllRoute: boolean = true;
@@ -105,11 +105,11 @@ export class RouteManager {
     }
 
     public get(builder: SchemaCallback, route: string, cb: (req: Request, res: Response) => Promise<ResponseContent> | ResponseContent): this {
-        const _ = new SchemaBuilder("GET", route)
+        const _ = new OpenAPISchemaBuilder("GET", "/" + this.table.tableName + route, this.table);
         builder(_);
 
         this.routes.push({
-            schema: _.toJSON(),
+            schema: _,
             route: route,
             method: "GET",
             cb: cb
@@ -118,12 +118,12 @@ export class RouteManager {
         return this;
     }
 
-    public post(builder: SchemaCallback<SchemaBodyBuilder>, route: string, cb: (req: Request, res: Response) => Promise<ResponseContent> | ResponseContent): this {
-        const _ = new SchemaBodyBuilder("POST", route)
+    public post(builder: SchemaCallback, route: string, cb: (req: Request, res: Response) => Promise<ResponseContent> | ResponseContent): this {
+        const _ = new OpenAPISchemaBuilder("POST", "/" + this.table.tableName + route, this.table);
         builder(_);
 
         this.routes.push({
-            schema: _.toJSON(),
+            schema: _,
             route: route,
             method: "POST",
             cb: cb
@@ -132,12 +132,12 @@ export class RouteManager {
         return this;
     }
 
-    public put(builder: SchemaCallback<SchemaBodyBuilder>, route: string, cb: (req: Request, res: Response) => Promise<ResponseContent> | ResponseContent): this {
-        const _ = new SchemaBodyBuilder("PUT", route)
+    public put(builder: SchemaCallback, route: string, cb: (req: Request, res: Response) => Promise<ResponseContent> | ResponseContent): this {
+        const _ = new OpenAPISchemaBuilder("PUT", "/" + this.table.tableName + route, this.table);
         builder(_);
 
         this.routes.push({
-            schema: _.toJSON(),
+            schema: _,
             route: route,
             method: "PUT",
             cb: cb
@@ -146,12 +146,12 @@ export class RouteManager {
         return this;
     }
 
-    public delete(builder: SchemaCallback<SchemaBodyBuilder>, route: string, cb: (req: Request, res: Response) => Promise<ResponseContent> | ResponseContent): this {
-        const _ = new SchemaBodyBuilder("DELETE", route)
+    public delete(builder: SchemaCallback, route: string, cb: (req: Request, res: Response) => Promise<ResponseContent> | ResponseContent): this {
+        const _ = new OpenAPISchemaBuilder("DELETE", "/" + this.table.tableName + route, this.table);
         builder(_);
 
         this.routes.push({
-            schema: _.toJSON(),
+            schema: _,
             route: route,
             method: "DELETE",
             cb: cb
@@ -233,11 +233,11 @@ export class ParamsHandler {
             return null;
         }
 
-        return this.params[name];
+        return parseInt(this.params[name]);
     }
 
     public isInt(name: string): boolean {
-        return this.contains(name) && typeof this.params[name] == "number" && math.isInt(this.params[name]);
+        return this.contains(name) && math.isInt(parseInt(this.params[name]));
     }
 
     public getNumber(name: string): number | null {
@@ -245,11 +245,11 @@ export class ParamsHandler {
             return null;
         }
 
-        return this.params[name];
+        return parseFloat(this.params[name]);
     }
 
     public isNumber(name: string): boolean {
-        return this.contains(name) && typeof this.params[name] == "number";
+        return this.contains(name) && !isNaN(parseFloat(this.params[name]));
     }
 
     public getString(name: string): string {

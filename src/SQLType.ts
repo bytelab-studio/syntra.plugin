@@ -6,6 +6,8 @@ import * as math from "./math";
 //     BIGINT
 // }
 
+type JSONType = 'integer' | 'number' | 'string' | 'boolean' | 'object' | 'null' | 'array' | JSONType[];
+
 const enum SQLTypeGroup {
     NONE,
     TINYINT,
@@ -24,11 +26,11 @@ const enum SQLTypeGroup {
 }
 
 export class SQLType {
-    public static readonly TINYINT: SQLType = new SQLType("TINYINT", "number", SQLTypeGroup.TINYINT);
-    public static readonly SMALLINT: SQLType = new SQLType("SMALLINT", "number", SQLTypeGroup.SMALLINT);
-    public static readonly MEDIUMINT: SQLType = new SQLType("MEDIUMINT", "number", SQLTypeGroup.MEDIUMINT);
-    public static readonly INT: SQLType = new SQLType("INT", "number", SQLTypeGroup.INT);
-    public static readonly BIGINT: SQLType = new SQLType("BIGINT", "number", SQLTypeGroup.BIGINT);
+    public static readonly TINYINT: SQLType = new SQLType("TINYINT", "integer", SQLTypeGroup.TINYINT);
+    public static readonly SMALLINT: SQLType = new SQLType("SMALLINT", "integer", SQLTypeGroup.SMALLINT);
+    public static readonly MEDIUMINT: SQLType = new SQLType("MEDIUMINT", "integer", SQLTypeGroup.MEDIUMINT);
+    public static readonly INT: SQLType = new SQLType("INT", "integer", SQLTypeGroup.INT);
+    public static readonly BIGINT: SQLType = new SQLType("BIGINT", "integer", SQLTypeGroup.BIGINT);
     public static readonly BOOL: SQLType = new SQLType("TINYINT", "boolean", SQLTypeGroup.TINYINT);
 
     public static readonly FLOAT: SQLType = new SQLType("FLOAT", "number", SQLTypeGroup.FLOAT);
@@ -39,10 +41,10 @@ export class SQLType {
     public static readonly DATETIME: SQLType = new SQLType("DATETIME", "string", SQLTypeGroup.DATETIME);
 
     public readonly sqlName: string;
-    public readonly jsonType: string;
+    public readonly jsonType: JSONType;
     public readonly group: SQLTypeGroup;
 
-    public constructor(sqlName: string, jsonType: string, group: SQLTypeGroup) {
+    public constructor(sqlName: string, jsonType: JSONType, group: SQLTypeGroup) {
         this.sqlName = sqlName;
         this.jsonType = jsonType;
         this.group = group;
