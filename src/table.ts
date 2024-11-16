@@ -278,6 +278,9 @@ export class Table implements Serializable {
         if (!row) {
             return null;
         }
+
+        await table.events.afterSelect.emit([row]);
+
         const permission: Permission = row.permission.getValue();
         if (permission.readPermission.getValue() == PermissionLevel.ALL) {
             return row;
@@ -290,7 +293,6 @@ export class Table implements Serializable {
             auth.primaryKey.getValue() == row.permission.getValue().authentication.getValue()) {
             return row;
         }
-        await table.events.afterSelect.emit([row]);
 
         return null;
     }
