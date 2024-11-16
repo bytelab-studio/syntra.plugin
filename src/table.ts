@@ -1,7 +1,7 @@
 import {toSQLFriendly} from "./utils";
 import {Serializable} from "./serializable";
-import {Column, ColumnFlags, PrimaryColumn} from "./column";
-import {Relation1T1, RelationLoad} from "./relation";
+import {Column, ColumnFlags, IColumn, PrimaryColumn} from "./column";
+import {Relation1T1, Relation1TN, RelationLoad} from "./relation";
 import {Authentication, Permission} from "./security";
 import {SQLType} from "./SQLType";
 import {Event} from "./event";
@@ -44,6 +44,9 @@ export class Table implements Serializable {
 
     public serialize(data: Record<string, any>): void {
         for (const column of this.getColumns()) {
+            if (!(column instanceof Column)) {
+                continue;
+            }
             const name: string = column.getColumnName();
             const type: SQLType = column.getColumnType();
 
@@ -66,16 +69,15 @@ export class Table implements Serializable {
         const obj: Record<string, any> = {};
 
         for (const column of this.getColumns()) {
-            if (column.containsFlag(ColumnFlags.PRIVATE)) {
-                continue;
-            }
             if (column instanceof Relation1T1) {
                 obj[column.getColumnName()] = column.getKeyValue();
 
                 if (column.loadingMethod == RelationLoad.DIRECT) {
                     obj[column.refTable.tableName] = column.getValue().deserialize();
                 }
-            } else {
+            } else if (column instanceof Relation1TN) {
+                obj[column.getColumnName()] = column.getValue().map(row => row.deserialize());
+            } else if (column instanceof Column) {
                 obj[column.getColumnName()] = column.getColumnType().export(column.getValue());
             }
         }
@@ -83,58 +85,75 @@ export class Table implements Serializable {
         return obj;
     }
 
-    private _cacheColumns: Column<unknown>[] | undefined;
+    private _cacheColumns: IColumn<unknown>[] | undefined;
 
-    public* getColumns(): Generator<Column<unknown>> {
-        const isNotCached: boolean = !this._cacheColumns;
-        if (isNotCached) {
-            this._cacheColumns = [];
-        } else {
+    public* getColumns(): Generator<IColumn<unknown>> {
+        if (this._cacheColumns) {
             for (const column of this._cacheColumns!) {
                 yield column;
             }
             return;
         }
 
+        this._cacheColumns = [];
         const set: Set<string> = new Set<string>();
 
         for (const key of Object.keys(this)) {
             // @ts-ignore
             const property: any = this[key];
             if (property instanceof Column) {
-                if (isNotCached) {
-                    this._cacheColumns!.push(property);
+                this._cacheColumns.push(property);
 
-                    if (property.getColumnName().trim() == "") {
-                        property.setColumnName(toSQLFriendly(key));
-                    }
-                    const name: string = property.getColumnName();
+                if (property.getColumnName().trim() == "") {
+                    property.setColumnName(toSQLFriendly(key));
+                }
+                const name: string = property.getColumnName();
 
-                    if (property instanceof Relation1T1) {
-                        if (set.has(name)) {
-                            throw `Duplicate column name '${name}'`;
-                        }
-                        if (set.has(property.columnRefName)) {
-                            throw `Duplicate column name '${property.columnRefName}'`;
-                        }
-                        set.add(name);
-                        set.add(property.columnRefName);
-                    } else {
-                        if (set.has(name)) {
-                            throw `Duplicate column name '${name}'`;
-                        }
-                        set.add(name);
+                if (property instanceof Relation1T1) {
+                    if (set.has(name)) {
+                        throw `Duplicate column name '${name}'`;
                     }
+                    if (set.has(property.columnRefName)) {
+                        throw `Duplicate column name '${property.columnRefName}'`;
+                    }
+                    set.add(name);
+                    set.add(property.columnRefName);
+                } else {
+                    if (set.has(name)) {
+                        throw `Duplicate column name '${name}'`;
+                    }
+                    set.add(name);
                 }
 
-                yield property as Column<unknown>;
+                yield property as IColumn<unknown>;
+            } else if (property instanceof Relation1TN) {
+                this._cacheColumns.push(property);
+
+                if (property.getColumnName().trim() == "") {
+                    property.setColumnName(toSQLFriendly(key));
+                }
+                const name: string = property.getColumnName();
+                if (set.has(name)) {
+                    throw `Duplicate column name '${name}'`;
+                }
+                set.add(name);
+
+                yield property as IColumn<unknown>;
             }
         }
     }
 
-    public* getRelations(): Generator<Relation1T1<Table>> {
+    public* get1T1Relations(): Generator<Relation1T1<Table>> {
         for (const column of this.getColumns()) {
             if (column instanceof Relation1T1) {
+                yield column;
+            }
+        }
+    }
+
+    public* get1TNRelations(): Generator<Relation1TN<Table>> {
+        for (const column of this.getColumns()) {
+            if (column instanceof Relation1TN) {
                 yield column;
             }
         }
@@ -191,6 +210,10 @@ export class Table implements Serializable {
         const errors: string[] = [];
 
         for (const column of this.getColumns()) {
+            if (!(column instanceof Column)) {
+                continue;
+            }
+
             if (column instanceof Relation1T1) {
                 if (column.isKeyNull() && !column.containsFlag(ColumnFlags.NULLABLE) && !(column instanceof PrimaryColumn) && column != this.permission) {
                     errors.push(`Column '${column.getColumnName()}' cannot be null`);
@@ -214,7 +237,7 @@ export class Table implements Serializable {
     }
 
     public async resolve(auth: Authentication | undefined): Promise<void> {
-        for (const relation of this.getRelations()) {
+        for (const relation of this.get1T1Relations()) {
             if (relation.loadingMethod != RelationLoad.DIRECT || relation.isKeyNull()) {
                 continue;
             }

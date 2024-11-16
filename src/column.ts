@@ -13,17 +13,20 @@ export enum ColumnFlags {
     PRIVATE = 0b10000
 }
 
-export class Column<T extends ColumnTypes> {
-    private columnName: string;
-    private columnType: SQLType;
-    private value: T | null;
-    private flags: ColumnFlags;
+export abstract class IColumn<T extends ColumnTypes> {
+    protected columnName: string;
+    protected value: T | null = null;
 
-    public constructor(columnType: SQLType, flags: ColumnFlags = ColumnFlags.NONE, columnName: string = "") {
+    protected constructor(columnName: string = "") {
         this.columnName = columnName;
-        this.columnType = columnType;
-        this.value = null;
-        this.flags = flags;
+    }
+
+    public abstract setValue(value: T): void;
+
+    public abstract getValue(): T;
+
+    public isNull(): boolean {
+        return this.value == null;
     }
 
     public setColumnName(name: string): void {
@@ -35,9 +38,17 @@ export class Column<T extends ColumnTypes> {
     public getColumnName(): string {
         return this.columnName;
     }
+}
 
-    public isNull(): boolean {
-        return this.value == null;
+export class Column<T extends ColumnTypes> extends IColumn<T> {
+    private columnType: SQLType;
+    private flags: ColumnFlags;
+
+    public constructor(columnType: SQLType, flags: ColumnFlags = ColumnFlags.NONE, columnName: string = "") {
+        super(columnName);
+        this.columnType = columnType;
+        this.value = null;
+        this.flags = flags;
     }
 
     public setValue(value: T): void {
