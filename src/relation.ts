@@ -8,7 +8,7 @@ export enum RelationLoad {
     LAZY
 }
 
-export abstract class Relation<K extends Table> extends Column<K> {
+export class Relation1T1<K extends Table> extends Column<K> {
     public readonly refTable: TableRef<K>;
     public readonly columnRefName: string;
     public readonly loadingMethod: RelationLoad;
@@ -50,7 +50,4 @@ export abstract class Relation<K extends Table> extends Column<K> {
             this.setKeyValue(value.primaryKey.getValue());
         }
     }
-}
-
-export class Relation1T1<K extends Table> extends Relation<K> {
 }

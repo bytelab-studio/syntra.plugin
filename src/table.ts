@@ -1,7 +1,7 @@
 import {toSQLFriendly} from "./utils";
 import {Serializable} from "./serializable";
 import {Column, ColumnFlags, PrimaryColumn} from "./column";
-import {Relation, Relation1T1, RelationLoad} from "./relation";
+import {Relation1T1, RelationLoad} from "./relation";
 import {Authentication, Permission} from "./security";
 import {SQLType} from "./SQLType";
 import {Event} from "./event";
@@ -48,7 +48,7 @@ export class Table implements Serializable {
             const type: SQLType = column.getColumnType();
 
             const value: any | undefined = data[name];
-            if (column instanceof Relation) {
+            if (column instanceof Relation1T1) {
                 if (typeof value == "undefined") {
                     continue;
                 }
@@ -69,7 +69,7 @@ export class Table implements Serializable {
             if (column.containsFlag(ColumnFlags.PRIVATE)) {
                 continue;
             }
-            if (column instanceof Relation) {
+            if (column instanceof Relation1T1) {
                 obj[column.getColumnName()] = column.getKeyValue();
 
                 if (column.loadingMethod == RelationLoad.DIRECT) {
@@ -110,7 +110,7 @@ export class Table implements Serializable {
                     }
                     const name: string = property.getColumnName();
 
-                    if (property instanceof Relation) {
+                    if (property instanceof Relation1T1) {
                         if (set.has(name)) {
                             throw `Duplicate column name '${name}'`;
                         }
@@ -132,9 +132,9 @@ export class Table implements Serializable {
         }
     }
 
-    public* getRelations(): Generator<Relation<Table>> {
+    public* getRelations(): Generator<Relation1T1<Table>> {
         for (const column of this.getColumns()) {
-            if (column instanceof Relation) {
+            if (column instanceof Relation1T1) {
                 yield column;
             }
         }
@@ -191,7 +191,7 @@ export class Table implements Serializable {
         const errors: string[] = [];
 
         for (const column of this.getColumns()) {
-            if (column instanceof Relation) {
+            if (column instanceof Relation1T1) {
                 if (column.isKeyNull() && !column.containsFlag(ColumnFlags.NULLABLE) && !(column instanceof PrimaryColumn) && column != this.permission) {
                     errors.push(`Column '${column.getColumnName()}' cannot be null`);
                     continue;
