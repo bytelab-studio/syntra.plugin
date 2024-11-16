@@ -154,7 +154,8 @@ export class Table implements Serializable {
 
     public async update(auth?: Authentication): Promise<void> {
         const permission: Permission = this.permission.getValue();
-        if (!(permission.writePermission.getValue() == PermissionLevel.ALL ||
+        if (!(auth == Authentication.root ||
+            permission.writePermission.getValue() == PermissionLevel.ALL ||
             permission.writePermission.getValue() == PermissionLevel.AUTH && !!auth ||
             permission.writePermission.getValue() == PermissionLevel.USER && !!auth && auth.primaryKey.getValue() == permission.authentication.getValue())) {
             throw `Cannot update '${this.tableName}' row because of missing permission`;
@@ -171,7 +172,8 @@ export class Table implements Serializable {
 
     public async delete(auth?: Authentication): Promise<void> {
         const permission: Permission = this.permission.getValue();
-        if (!(permission.deletePermission.getValue() == PermissionLevel.ALL ||
+        if (!(auth == Authentication.root ||
+            permission.deletePermission.getValue() == PermissionLevel.ALL ||
             permission.deletePermission.getValue() == PermissionLevel.AUTH && !!auth ||
             permission.deletePermission.getValue() == PermissionLevel.USER && !!auth && auth.primaryKey.getValue() == permission.authentication.getValue())) {
             throw `Cannot delete '${this.tableName}' row because of missing permission`;
@@ -242,8 +244,15 @@ export class Table implements Serializable {
         const auth: Authentication | undefined = args[1];
         await table.events.beforeSelect.emit()
 
+        const result: K[] = await bridge.selectAll<T, K>(table);
+
+        if (auth == Authentication.root) {
+            await table.events.afterSelect.emit(result);
+            return result;
+        }
+
         const rows: K[] = [];
-        (await bridge.selectAll<T, K>(table)).forEach(row => {
+        result.forEach(row => {
             const level: PermissionLevel = row.permission.getValue().readPermission.getValue();
             if (level == PermissionLevel.ALL) {
                 rows.push(row);
@@ -280,6 +289,10 @@ export class Table implements Serializable {
         }
 
         await table.events.afterSelect.emit([row]);
+
+        if (auth == Authentication.root) {
+            return row;
+        }
 
         const permission: Permission = row.permission.getValue();
         if (permission.readPermission.getValue() == PermissionLevel.ALL) {
