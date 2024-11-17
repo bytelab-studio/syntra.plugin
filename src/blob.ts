@@ -23,6 +23,7 @@ Resource.routes.enableUpdateRoute = false;
 Resource.routes.enableDeleteRoute = false;
 
 Resource.routes.get(builder => {
+    builder.addParameter("id", "path", SQLType.BIGINT);
     builder.addResponse(200, "buffer", "application/octet-stream")
 }, "/:id", async (req, res) => {
     const id: number | null = req.params.getInt("id");
