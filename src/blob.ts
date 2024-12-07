@@ -71,7 +71,7 @@ Resource.routes.post(builder => {
 })
 
 export class ResourceColumn extends Relation1T1<Resource> {
-    public constructor(flags: ColumnFlags = ColumnFlags.NONE, loadingMethod: RelationLoad = RelationLoad.DIRECT) {
-        super(Resource, flags, loadingMethod);
+    public constructor(columnName: string, flags: ColumnFlags = ColumnFlags.NONE, loadingMethod: RelationLoad = RelationLoad.DIRECT) {
+        super(Resource, flags, loadingMethod, columnName + "_id", columnName);
     }
 }
