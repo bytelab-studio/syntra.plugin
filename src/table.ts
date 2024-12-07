@@ -70,14 +70,22 @@ export class Table implements Serializable {
 
         for (const column of this.getColumns()) {
             if (column instanceof Relation1T1) {
+                if (column.containsFlag(ColumnFlags.PRIVATE)) {
+                    continue;
+                }
+
                 obj[column.getColumnName()] = column.getKeyValue();
 
                 if (column.loadingMethod == RelationLoad.DIRECT) {
-                    obj[column.refTable.tableName] = column.getValue().deserialize();
+                    obj[column.columnRefName] = column.getValue().deserialize();
                 }
             } else if (column instanceof Relation1TN) {
                 obj[column.getColumnName()] = column.getValue().map(row => row.deserialize());
             } else if (column instanceof Column) {
+                if (column.containsFlag(ColumnFlags.PRIVATE)) {
+                    continue;
+                }
+
                 obj[column.getColumnName()] = column.getColumnType().export(column.getValue());
             }
         }
