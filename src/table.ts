@@ -77,7 +77,8 @@ export class Table implements Serializable {
                 obj[column.getColumnName()] = column.getKeyValue();
 
                 if (column.loadingMethod == RelationLoad.DIRECT) {
-                    obj[column.columnRefName] = column.getValue().deserialize();
+                    const table: Table = column.getValue();
+                    obj[column.columnRefName] = !!table ? table.deserialize() : null;
                 }
             } else if (column instanceof Relation1TN) {
                 obj[column.getColumnName()] = column.getValue().map(row => row.deserialize());
