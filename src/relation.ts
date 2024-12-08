@@ -10,8 +10,6 @@ export enum RelationLoad {
 export interface IJoinable<K extends Table> {
     refTable: TableRef<K>
 
-    getJoinName(activeTable: string): string;
-
     getColumnName(): string;
 }
 
@@ -54,10 +52,6 @@ export class Relation1T1<K extends Table> extends Column<K> implements IJoinable
             this.setKeyValue(value.primaryKey.getValue());
         }
     }
-
-    public getJoinName(activeTable: string): string {
-        return activeTable + "_" + this.getColumnName() + "_" + this.refTable.tableName + "_" + (new this.refTable()).primaryKey.getColumnName();
-    }
 }
 
 export class Relation1TN<K extends Table> extends IColumn<K[]> implements IJoinable<K> {
@@ -85,9 +79,5 @@ export class Relation1TN<K extends Table> extends IColumn<K[]> implements IJoina
             throw `Map relation '${this.columnName}' is null`
         }
         return this.value;
-    }
-
-    public getJoinName(activeTable: string): string {
-        return activeTable + "_" + this.columnName + "_" + this.refTable.tableName + "_" + this.refColumn.getColumnName();
     }
 }
