@@ -212,6 +212,9 @@ export class AuthorizationHandler {
         this.faulty = faulty;
     }
 
+	/**
+	 * @deprecated Use AuthorizatonHandler.auth instead
+	 */
     public valid(): boolean {
         return !!this.auth;
     }
