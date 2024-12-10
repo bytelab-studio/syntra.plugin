@@ -220,6 +220,18 @@ export class Table implements Serializable {
         }
     }
 
+    public setupColumns(): void {
+        if (!!this._cacheColumns) {
+            return;
+        }
+
+        const columns: Generator<IColumn<unknown>> = this.getColumns();
+        let iterator: IteratorYieldResult<IColumn<unknown>> | IteratorReturnResult<any> = columns.next();
+        while (!iterator.done) {
+            iterator = columns.next();
+        }
+    }
+
     public async insert(auth: Authentication, readLevel?: PermissionLevel, writeLevel?: PermissionLevel, deleteLevel?: PermissionLevel): Promise<void> {
         if (auth != Authentication.root && !(await this.checkCreatePermission(auth))) {
 			throw `Cannot insert '${this.tableName}' row because of missing permission`;
@@ -237,7 +249,6 @@ export class Table implements Serializable {
     }
 
     public async update(auth?: Authentication): Promise<void> {
-        const permission: Permission = this.permission.getValue();
         if (auth != Authentication.root && !(await this.checkWritePermission(auth))) {
             throw `Cannot update '${this.tableName}' row because of missing permission`;
         }

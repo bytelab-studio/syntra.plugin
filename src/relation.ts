@@ -64,7 +64,10 @@ export class Relation1TN<K extends Table> extends IColumn<K[]> implements IJoina
         this.refTable = table;
         this.loadingMethod = loadingMethod;
         // @ts-ignore
-        this.refColumn = cb(new table());
+        const row: K = new table();
+        row.setupColumns();
+
+        this.refColumn = cb(row);
         if (this.refColumn.getColumnType() != SQLType.BIGINT) {
             throw "1:N Relation must target a column of type BIGINT";
         }
