@@ -77,7 +77,7 @@ export class OpenAPISchemaBuilder {
     public constructor(method: "GET" | "POST" | "PUT" | "DELETE", route: string, group: TableRef<Table>) {
         this.method = method;
         this.route = route.replace(/:(\w+)/g, "{$1}");
-        this.tag = (group.tableName[0].toUpperCase() + group.tableName.substring(1));
+        this.tag = group.tableName.replace(/(^[a-z]|_+[a-z])/g, (m) => m[m.length > 1 ? 1 : 0].toUpperCase());
         this.summary = "";
         this.parameters = [];
         this.requestBody = undefined;
