@@ -1,4 +1,4 @@
-import {table, Table, TableRef} from "./table";
+import {table, Table, TableRef, PermissionLevel} from "./table";
 import {Column, ColumnFlags} from "./column";
 import {SQLType, VarChar} from "./SQLType";
 import {Relation1T1, RelationLoad} from "./relation";
@@ -44,14 +44,21 @@ Resource.routes.get(builder => {
 
 Resource.routes.post(builder => {
     builder.setRequestBody("buffer", "*/*")
+	builder.addParameter("mime", "query", new VarChar(100), true);
+	builder.addParameter("read", "query", SQLType.SMALLINT, false);
+	builder.addParameter("write", "query", SQLType.SMALLINT, false);
+	builder.addParameter("delete", "query", SQLType.SMALLINT, false);
     builder.addResponse(200, SchemaDefinition.from("resource_select_res"))
 }, "/", async (req, res) => {
-    if (!req.authorization.valid()) {
+    if (!req.authorization.auth) {
         return res.unauthorized();
     }
+	if (!req.params.contains("mime")) {
+		return res.badRequest();
+	}
 
     const content: Buffer = req.body.raw();
-    const contentType: ContentType = req.body.contentType || "application/octet-stream";
+	const contentType: ContentType = <ContentType>req.params.getString("mime");
     const length: number = content.length;
 
     const resource: Resource = new Resource();
@@ -59,7 +66,36 @@ Resource.routes.post(builder => {
     resource.mimeType.setValue(contentType);
     resource.length.setValue(length);
 
-    await resource.insert(req.authorization.auth!);
+	let readLevel: PermissionLevel | undefined;
+	const readValue: number | null = req.params.getInt("read");
+	let writeLevel: PermissionLevel | undefined;
+	const writeValue: number | null = req.params.getInt("write");
+	let deleteLevel: PermissionLevel | undefined;
+	const deleteValue: number | null = req.params.getInt("delete");
+
+	if (!!readValue) {
+		const key: string | undefined = PermissionLevel[readValue];
+		if (!!key) {
+			// @ts-ignore
+			readLevel = PermissionLevel[key];
+		}	
+	}
+	if (!!writeValue) {
+		const key: string | undefined = PermissionLevel[writeValue];
+		if (!!key) {
+			// @ts-ignore
+			writeLevel  = PermissionLevel[key];
+		}	
+	}
+	if (!!deleteValue) {
+		const key: string | undefined = PermissionLevel[deleteValue];
+		if (!!key) {
+			// @ts-ignore
+			deleteLevel = PermissionLevel[key];
+		}	
+	}
+
+    await resource.insert(req.authorization.auth, readLevel, writeLevel, deleteLevel);
 
     return res.ok({
         status: 200,
