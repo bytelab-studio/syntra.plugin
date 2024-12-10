@@ -42,7 +42,59 @@ export class Table implements Serializable {
         this.deleteLevel = deleteLevel;
     }
 
-    public serialize(data: Record<string, any>): void {
+	public async checkReadPermission(auth?: Authentication): Promise<boolean>  {
+		const level: PermissionLevel = this.permission.getValue().readPermission.getValue();
+        if (level == PermissionLevel.ALL) {
+        	return true;
+		} else if (level == PermissionLevel.AUTH && !!auth) {
+        	return true;
+		} else if (level == PermissionLevel.USER &&
+			      !!auth &&
+            	  auth.primaryKey.getValue() == this.permission.getValue().authentication.getValue()
+		) {
+			return true;
+    	}
+
+		return false;
+	}
+
+	public async checkWritePermission(auth?: Authentication): Promise<boolean> {
+		const level: PermissionLevel = this.permission.getValue().writePermission.getValue();
+        if (level == PermissionLevel.ALL) {
+        	return true;
+		} else if (level == PermissionLevel.AUTH && !!auth) {
+        	return true;
+		} else if (level == PermissionLevel.USER &&
+			      !!auth &&
+            	  auth.primaryKey.getValue() == this.permission.getValue().authentication.getValue()
+		) {
+			return true;
+    	}
+
+		return false;
+	}
+
+	public async checkDeletePermission(auth?: Authentication): Promise<boolean> {
+		const level: PermissionLevel = this.permission.getValue().readPermission.getValue();
+        if (level == PermissionLevel.ALL) {
+        	return true;
+		} else if (level == PermissionLevel.AUTH && !!auth) {
+        	return true;
+		} else if (level == PermissionLevel.USER &&
+			      !!auth &&
+            	  auth.primaryKey.getValue() == this.permission.getValue().authentication.getValue()
+		) {
+			return true;
+    	}
+
+		return false;
+	}
+
+	public async checkCreatePermission(auth?: Authentication): Promise<boolean> {
+		return !!auth;
+	}
+    
+	public serialize(data: Record<string, any>): void {
         for (const column of this.getColumns()) {
             if (!(column instanceof Column)) {
                 continue;
@@ -169,7 +221,11 @@ export class Table implements Serializable {
     }
 
     public async insert(auth: Authentication, readLevel?: PermissionLevel, writeLevel?: PermissionLevel, deleteLevel?: PermissionLevel): Promise<void> {
-        const permission: Permission = new Permission();
+        if (auth != Authentication.root && !(await this.checkCreatePermission(auth))) {
+			throw `Cannot insert '${this.tableName}' row because of missing permission`;
+		}
+		
+		const permission: Permission = new Permission();
         permission.readPermission.setValue(readLevel || this.readLevel);
         permission.writePermission.setValue(writeLevel || this.writeLevel);
         permission.deletePermission.setValue(deleteLevel || this.deleteLevel);
@@ -182,10 +238,7 @@ export class Table implements Serializable {
 
     public async update(auth?: Authentication): Promise<void> {
         const permission: Permission = this.permission.getValue();
-        if (!(auth == Authentication.root ||
-            permission.writePermission.getValue() == PermissionLevel.ALL ||
-            permission.writePermission.getValue() == PermissionLevel.AUTH && !!auth ||
-            permission.writePermission.getValue() == PermissionLevel.USER && !!auth && auth.primaryKey.getValue() == permission.authentication.getValue())) {
+        if (auth != Authentication.root && !(await this.checkWritePermission(auth))) {
             throw `Cannot update '${this.tableName}' row because of missing permission`;
         }
 
@@ -199,11 +252,7 @@ export class Table implements Serializable {
     }
 
     public async delete(auth?: Authentication): Promise<void> {
-        const permission: Permission = this.permission.getValue();
-        if (!(auth == Authentication.root ||
-            permission.deletePermission.getValue() == PermissionLevel.ALL ||
-            permission.deletePermission.getValue() == PermissionLevel.AUTH && !!auth ||
-            permission.deletePermission.getValue() == PermissionLevel.USER && !!auth && auth.primaryKey.getValue() == permission.authentication.getValue())) {
+        if (auth != Authentication.root && !(await this.checkDeletePermission(auth))) {
             throw `Cannot delete '${this.tableName}' row because of missing permission`;
         }
 
@@ -284,18 +333,11 @@ export class Table implements Serializable {
         }
 
         const rows: K[] = [];
-        result.forEach(row => {
-            const level: PermissionLevel = row.permission.getValue().readPermission.getValue();
-            if (level == PermissionLevel.ALL) {
-                rows.push(row);
-            } else if (level == PermissionLevel.AUTH && !!auth) {
-                rows.push(row);
-            } else if (level == PermissionLevel.USER &&
-                !!auth &&
-                auth.primaryKey.getValue() == row.permission.getValue().authentication.getValue()) {
-                rows.push(row);
-            }
-        });
+        for (const row of result) {
+            if (await row.checkReadPermission(auth)) {
+				rows.push(row);
+			}
+        };
 
         await table.events.afterSelect.emit(rows);
         return rows;
@@ -320,25 +362,12 @@ export class Table implements Serializable {
             return null;
         }
 
-        await table.events.afterSelect.emit([row]);
+		if (auth == Authentication.root || await row.checkReadPermission(auth)) {
+        	await table.events.afterSelect.emit([row]);
+			return row;
+		}
 
-        if (auth == Authentication.root) {
-            return row;
-        }
-
-        const permission: Permission = row.permission.getValue();
-        if (permission.readPermission.getValue() == PermissionLevel.ALL) {
-            return row;
-        }
-        if (permission.readPermission.getValue() == PermissionLevel.AUTH && !!auth) {
-            return row;
-        }
-        if (permission.readPermission.getValue() == PermissionLevel.USER &&
-            !!auth &&
-            auth.primaryKey.getValue() == row.permission.getValue().authentication.getValue()) {
-            return row;
-        }
-
+		await table.events.afterSelect.emit([null]);
         return null;
     }
 
