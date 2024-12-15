@@ -72,6 +72,7 @@ export interface Request {
     body: BodyHandler;
     authorization: AuthorizationHandler;
     params: ParamsHandler;
+    headers: HeaderHandler;
 }
 
 export type ResponseContent = {
@@ -212,9 +213,9 @@ export class AuthorizationHandler {
         this.faulty = faulty;
     }
 
-	/**
-	 * @deprecated Use AuthorizatonHandler.auth instead
-	 */
+    /**
+     * @deprecated Use AuthorizatonHandler.auth instead
+     */
     public valid(): boolean {
         return !!this.auth;
     }
@@ -257,6 +258,32 @@ export class ParamsHandler {
 
     public getString(name: string): string {
         return this.params[name];
+    }
+}
+
+export class HeaderHandler {
+    private readonly headers: Record<string, string>;
+
+    public constructor(headers: Record<string, string>) {
+        this.headers = headers;
+    }
+
+    public contains(name: string): boolean {
+        return name.toLowerCase() in this.headers;
+    }
+
+    public getString(name: string): string | null {
+        if (this.contains(name)) {
+            return null;
+        }
+        return this.headers[name.toLowerCase()];
+    }
+
+    public get token(): string | null {
+        if (!this.contains("Authorization")) {
+            return null;
+        }
+        return this.getString("Authorization")!.substring(7);
     }
 }
 
