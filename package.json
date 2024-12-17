@@ -1,6 +1,6 @@
 {
     "name": "@bytelab.studio/syntra.plugin",
-    "version": "1.0.0",
+    "version": "0.1.0",
     "description": "Plugin system for Syntra Servers",
     "main": "./out/index.js",
     "types": "./dec/index.d.ts",
@@ -16,14 +16,14 @@
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 0"
     },
+    "dependencies": {
+        "openapi3-ts": "^4.4.0"
+    },
     "devDependencies": {
         "@types/node": "^22.7.5"
     },
     "files": [
         "out",
         "dec"
-    ],
-    "dependencies": {
-        "openapi3-ts": "^4.4.0"
-    }
+    ]
 }
