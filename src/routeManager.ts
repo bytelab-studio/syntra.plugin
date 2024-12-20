@@ -273,7 +273,7 @@ export class HeaderHandler {
     }
 
     public getString(name: string): string | null {
-        if (this.contains(name)) {
+        if (!this.contains(name)) {
             return null;
         }
         return this.headers[name.toLowerCase()];
