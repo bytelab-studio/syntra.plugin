@@ -33,7 +33,10 @@ export class Authentication extends Table {
     public username: Column<string> = new Column(new VarChar(250));
     public email: Column<string> = new Column(new VarChar(250));
     public password: Column<string> = new Column(new VarChar(64), ColumnFlags.PRIVATE);
-	public deactivated: Column<boolean> = new Column(SQLType.BOOL, ColumnFlags.PRIVATE);	
+    public deactivated: Column<boolean> = new Column(SQLType.BOOL, ColumnFlags.PRIVATE);
+    public canRead: Column<boolean> = new Column(SQLType.BOOL, ColumnFlags.PRIVATE, "read");
+    public canWrite: Column<boolean> = new Column(SQLType.BOOL, ColumnFlags.PRIVATE, "write");
+    public canDelete: Column<boolean> = new Column(SQLType.BOOL, ColumnFlags.PRIVATE, "delete");
 
     public static readonly root: Authentication = new Authentication();
 
@@ -42,8 +45,11 @@ export class Authentication extends Table {
         this.root.username.setValue("root");
         this.root.email.setValue("root");
         this.root.password.setValue("4813494d137e1631bba301d5acab6e7bb7aa74ce1185d456565ef51d737677b2");
-		this.root.deactivated.setValue(false);    
-	}
+        this.root.deactivated.setValue(false);
+        this.root.canRead.setValue(true);
+        this.root.canWrite.setValue(true);
+        this.root.canDelete.setValue(true);
+    }
 }
 
 Authentication.routes.enableCreateRoute = false;
