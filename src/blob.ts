@@ -53,12 +53,12 @@ Resource.routes.post(builder => {
     if (!req.authorization.auth) {
         return res.unauthorized();
     }
-	if (!req.params.contains("mime")) {
+	if (!req.query.contains("mime")) {
 		return res.badRequest();
 	}
 
     const content: Buffer = req.body.raw();
-	const contentType: ContentType = <ContentType>req.params.getString("mime");
+	const contentType: ContentType = <ContentType>req.query.getString("mime");
     const length: number = content.length;
 
     const resource: Resource = new Resource();
@@ -67,11 +67,11 @@ Resource.routes.post(builder => {
     resource.length.setValue(length);
 
 	let readLevel: PermissionLevel | undefined;
-	const readValue: number | null = req.params.getInt("read");
+	const readValue: number | null = req.query.getInt("read");
 	let writeLevel: PermissionLevel | undefined;
-	const writeValue: number | null = req.params.getInt("write");
+	const writeValue: number | null = req.query.getInt("write");
 	let deleteLevel: PermissionLevel | undefined;
-	const deleteValue: number | null = req.params.getInt("delete");
+	const deleteValue: number | null = req.query.getInt("delete");
 
 	if (!!readValue) {
 		const key: string | undefined = PermissionLevel[readValue];
@@ -92,7 +92,7 @@ Resource.routes.post(builder => {
 		if (!!key) {
 			// @ts-ignore
 			deleteLevel = PermissionLevel[key];
-		}	
+		}
 	}
 
     await resource.insert(req.authorization.auth, readLevel, writeLevel, deleteLevel);
