@@ -20,8 +20,13 @@ export enum PermissionLevel {
 }
 
 export class Table implements Serializable {
-    declare public static events: Event;
+    private static namespaceStack: string[] = [];
+	private static databaseStack: string[] = [];
+
+	declare public static events: Event;
     declare public static routes: RouteManager;
+	declare public static namespace: string | null;
+	declare public static database: string;
 
     public readonly readLevel: PermissionLevel;
     public readonly writeLevel: PermissionLevel;
@@ -33,6 +38,13 @@ export class Table implements Serializable {
     public get tableName(): string {
         return toSQLFriendly(this.constructor.name);
     }
+
+	public get fullTableName(): string {
+		if (!this.constructor.namespace) {
+			return this.tableName;
+		}
+		return `${this.constructor.namespace}_${this.tableName}`;
+	}
 
     protected constructor(readLevel: PermissionLevel = PermissionLevel.USER, writeLevel: PermissionLevel = PermissionLevel.USER, deleteLevel: PermissionLevel = PermissionLevel.USER) {
         this.primaryKey = new PrimaryColumn(SQLType.BIGINT, ColumnFlags.AUTO_INCREMENT | ColumnFlags.READONLY, this.tableName + "_id");
@@ -324,6 +336,21 @@ export class Table implements Serializable {
         return toSQLFriendly(this.name);
     }
 
+	public static get fullTableName(): string {
+		if (!this.namespace) {
+			return this.tableName;
+		}
+		return `${this.namespace}_${this.tableName}`;
+	}
+
+	public static set namespace(value: string): void {
+		this.namespaceStack.push(value);
+	}
+
+	public static set database(value: string): void {
+		this.databaseStack.push(value);
+	}
+
     public static async selectAll<T extends TableRef<K>, K extends Table>(table: T, auth?: Authentication): Promise<K[]>;
 
     public static async selectAll<T extends TableRef<K>, K extends Table>(auth?: Authentication): Promise<K[]>;
@@ -383,10 +410,15 @@ export class Table implements Serializable {
     }
 
     public static registerTable<T extends TableRef<K>, K extends Table>(table: T): void {
-        if (tableNames.has(table.tableName)) {
-            throw `Ambiguous name '${table.tableName}'. '${table.tableName}' was already declared once`;
+		if (this.namespaceStack.length > 0) {
+			table.namespace = this.namespaceStack[this.namespaceStack.lenght - 1];
+		}
+		table.database = this.databaseStack[this.databaseStack - 1];
+
+        if (tableNames.has(table.fullTableName)) {
+            throw `Ambiguous name '${table.fullTableName}'. '${table.fullTableName}' was already declared once`;
         }
-        tableNames.add(table.tableName);
+        tableNames.add(table.fullTableName);
 
         table.events = new Event();
         table.routes = new RouteManager(table);
