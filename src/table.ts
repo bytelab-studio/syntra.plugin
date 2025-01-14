@@ -57,59 +57,71 @@ export class Table implements Serializable {
         this.deleteLevel = deleteLevel;
     }
 
-	public async checkReadPermission(auth?: Authentication): Promise<boolean>  {
-		const level: PermissionLevel = this.permission.getValue().readPermission.getValue();
+    public async checkReadPermission(auth?: Authentication): Promise<boolean> {
+        if (auth && !auth.canRead.getValue()) {
+            return false;
+        }
+
+        const level: PermissionLevel = this.permission.getValue().readPermission.getValue();
         if (level == PermissionLevel.ALL) {
-        	return true;
-		} else if (level == PermissionLevel.AUTH && !!auth) {
-        	return true;
-		} else if (level == PermissionLevel.USER &&
-			      !!auth &&
-            	  auth.primaryKey.getValue() == this.permission.getValue().authentication.getValue()
-		) {
-			return true;
-    	}
+            return true;
+        } else if (level == PermissionLevel.AUTH && !!auth) {
+            return true;
+        } else if (level == PermissionLevel.USER &&
+            !!auth &&
+            auth.primaryKey.getValue() == this.permission.getValue().authentication.getValue()
+        ) {
+            return true;
+        }
 
-		return false;
-	}
+        return false;
+    }
 
-	public async checkWritePermission(auth?: Authentication): Promise<boolean> {
-		const level: PermissionLevel = this.permission.getValue().writePermission.getValue();
+    public async checkWritePermission(auth?: Authentication): Promise<boolean> {
+        if (auth && !auth.canWrite.getValue()) {
+            return false;
+        }
+
+        const level: PermissionLevel = this.permission.getValue().writePermission.getValue();
         if (level == PermissionLevel.ALL) {
-        	return true;
-		} else if (level == PermissionLevel.AUTH && !!auth) {
-        	return true;
-		} else if (level == PermissionLevel.USER &&
-			      !!auth &&
-            	  auth.primaryKey.getValue() == this.permission.getValue().authentication.getValue()
-		) {
-			return true;
-    	}
+            return true;
+        } else if (level == PermissionLevel.AUTH && !!auth) {
+            return true;
+        } else if (level == PermissionLevel.USER &&
+            !!auth &&
+            auth.primaryKey.getValue() == this.permission.getValue().authentication.getValue()
+        ) {
+            return true;
+        }
 
-		return false;
-	}
+        return false;
+    }
 
-	public async checkDeletePermission(auth?: Authentication): Promise<boolean> {
-		const level: PermissionLevel = this.permission.getValue().readPermission.getValue();
+    public async checkDeletePermission(auth?: Authentication): Promise<boolean> {
+        if (auth && !auth.canDelete.getValue()) {
+            return false;
+        }
+
+        const level: PermissionLevel = this.permission.getValue().deletePermission.getValue();
         if (level == PermissionLevel.ALL) {
-        	return true;
-		} else if (level == PermissionLevel.AUTH && !!auth) {
-        	return true;
-		} else if (level == PermissionLevel.USER &&
-			      !!auth &&
-            	  auth.primaryKey.getValue() == this.permission.getValue().authentication.getValue()
-		) {
-			return true;
-    	}
+            return true;
+        } else if (level == PermissionLevel.AUTH && !!auth) {
+            return true;
+        } else if (level == PermissionLevel.USER &&
+            !!auth &&
+            auth.primaryKey.getValue() == this.permission.getValue().authentication.getValue()
+        ) {
+            return true;
+        }
 
-		return false;
-	}
+        return false;
+    }
 
-	public async checkCreatePermission(auth?: Authentication): Promise<boolean> {
-		return !!auth;
-	}
-    
-	public serialize(data: Record<string, any>): void {
+    public async checkCreatePermission(auth?: Authentication): Promise<boolean> {
+        return !!auth;
+    }
+
+    public serialize(data: Record<string, any>): void {
         for (const column of this.getColumns()) {
             if (!(column instanceof Column)) {
                 continue;
@@ -249,10 +261,10 @@ export class Table implements Serializable {
 
     public async insert(auth: Authentication, readLevel?: PermissionLevel, writeLevel?: PermissionLevel, deleteLevel?: PermissionLevel): Promise<void> {
         if (auth != Authentication.root && !(await this.checkCreatePermission(auth))) {
-			throw `Cannot insert '${this.fullTableName}' row because of missing permission`;
-		}
-		
-		const permission: Permission = new Permission();
+            throw `Cannot insert '${this.fullTableName}' row because of missing permission`;
+        }
+
+        const permission: Permission = new Permission();
         permission.readPermission.setValue(readLevel || this.readLevel);
         permission.writePermission.setValue(writeLevel || this.writeLevel);
         permission.deletePermission.setValue(deleteLevel || this.deleteLevel);
@@ -376,9 +388,9 @@ export class Table implements Serializable {
         const rows: K[] = [];
         for (const row of result) {
             if (await row.checkReadPermission(auth)) {
-				rows.push(row);
-			}
-        };
+                rows.push(row);
+            }
+        }
 
         await table.events.afterSelect.emit(rows);
         return rows;
@@ -403,12 +415,12 @@ export class Table implements Serializable {
             return null;
         }
 
-		if (auth == Authentication.root || await row.checkReadPermission(auth)) {
-        	await table.events.afterSelect.emit([row]);
-			return row;
-		}
+        if (auth == Authentication.root || await row.checkReadPermission(auth)) {
+            await table.events.afterSelect.emit([row]);
+            return row;
+        }
 
-		await table.events.afterSelect.emit([null]);
+        await table.events.afterSelect.emit([null]);
         return null;
     }
 

@@ -73,6 +73,7 @@ export interface Request {
     authorization: AuthorizationHandler;
     params: ParamsHandler;
     headers: HeaderHandler;
+    query: QueryHandler;
 }
 
 export type ResponseContent = {
@@ -261,6 +262,46 @@ export class ParamsHandler {
     }
 }
 
+export class QueryHandler {
+    private readonly query: Record<string, string>;
+
+    public constructor(query: Record<string, string>) {
+        this.query = query;
+    }
+
+    public contains(name: string): boolean {
+        return name in this.query;
+    }
+
+    public getInt(name: string): number | null {
+        if (!this.isInt(name)) {
+            return null;
+        }
+
+        return parseInt(this.query[name]);
+    }
+
+    public isInt(name: string): boolean {
+        return this.contains(name) && math.isInt(parseInt(this.query[name]));
+    }
+
+    public getNumber(name: string): number | null {
+        if (!this.isNumber(name)) {
+            return null;
+        }
+
+        return parseFloat(this.query[name]);
+    }
+
+    public isNumber(name: string): boolean {
+        return this.contains(name) && !isNaN(parseFloat(this.query[name]));
+    }
+
+    public getString(name: string): string {
+        return this.query[name];
+    }
+}
+
 export class HeaderHandler {
     private readonly headers: Record<string, string>;
 
@@ -273,7 +314,7 @@ export class HeaderHandler {
     }
 
     public getString(name: string): string | null {
-        if (this.contains(name)) {
+        if (!this.contains(name)) {
             return null;
         }
         return this.headers[name.toLowerCase()];

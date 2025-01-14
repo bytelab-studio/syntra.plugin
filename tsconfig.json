@@ -9,7 +9,6 @@
         "outDir": "out",
         "declaration": true,
         "declarationDir": "dec",
-        "experimentalDecorators": true,
-        "sourceMap": true
+        "experimentalDecorators": true
     }
 }
