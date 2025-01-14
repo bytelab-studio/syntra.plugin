@@ -40,15 +40,18 @@ export class Table implements Serializable {
     }
 
 	public get fullTableName(): string {
+		// @ts-ignore
 		if (!this.constructor.namespace) {
-			return this.tableName;
+			// @ts-ignore
+			return `${this.constructor.database}_${this.tableName}`;
 		}
-		return `${this.constructor.namespace}_${this.tableName}`;
+		// @ts-ignore
+		return `${this.constructor.database}_${this.constructor.namespace}_${this.tableName}`;
 	}
 
     protected constructor(readLevel: PermissionLevel = PermissionLevel.USER, writeLevel: PermissionLevel = PermissionLevel.USER, deleteLevel: PermissionLevel = PermissionLevel.USER) {
         this.primaryKey = new PrimaryColumn(SQLType.BIGINT, ColumnFlags.AUTO_INCREMENT | ColumnFlags.READONLY, this.tableName + "_id");
-        this.permission = this.tableName != "permission" ? new Relation1T1<Permission>(Permission, ColumnFlags.READONLY) : undefined as unknown as Relation1T1<Permission>;
+        this.permission = this.fullTableName != "permission" ? new Relation1T1<Permission>(Permission, ColumnFlags.READONLY) : undefined as unknown as Relation1T1<Permission>;
         this.readLevel = readLevel;
         this.writeLevel = writeLevel;
         this.deleteLevel = deleteLevel;
@@ -246,7 +249,7 @@ export class Table implements Serializable {
 
     public async insert(auth: Authentication, readLevel?: PermissionLevel, writeLevel?: PermissionLevel, deleteLevel?: PermissionLevel): Promise<void> {
         if (auth != Authentication.root && !(await this.checkCreatePermission(auth))) {
-			throw `Cannot insert '${this.tableName}' row because of missing permission`;
+			throw `Cannot insert '${this.fullTableName}' row because of missing permission`;
 		}
 		
 		const permission: Permission = new Permission();
@@ -262,11 +265,11 @@ export class Table implements Serializable {
 
     public async update(auth?: Authentication): Promise<void> {
         if (auth != Authentication.root && !(await this.checkWritePermission(auth))) {
-            throw `Cannot update '${this.tableName}' row because of missing permission`;
+            throw `Cannot update '${this.fullTableName}' row because of missing permission`;
         }
 
         if (!await bridge.rowExist(this)) {
-            throw `Cannot update '${this.tableName}' row because it was never inserted`;
+            throw `Cannot update '${this.fullTableName}' row because it was never inserted`;
         }
 
         await (<TableRef<Table>>this.constructor).events.beforeUpdate.emit(this);
@@ -276,11 +279,11 @@ export class Table implements Serializable {
 
     public async delete(auth?: Authentication): Promise<void> {
         if (auth != Authentication.root && !(await this.checkDeletePermission(auth))) {
-            throw `Cannot delete '${this.tableName}' row because of missing permission`;
+            throw `Cannot delete '${this.fullTableName}' row because of missing permission`;
         }
 
         if (!await bridge.rowExist(this)) {
-            throw `Cannot delete '${this.tableName}' row because it was never inserted`;
+            throw `Cannot delete '${this.fullTableName}' row because it was never inserted`;
         }
         await (<TableRef<Table>>this.constructor).events.beforeDelete.emit(this);
         await bridge.delete(this);
@@ -338,17 +341,17 @@ export class Table implements Serializable {
 
 	public static get fullTableName(): string {
 		if (!this.namespace) {
-			return this.tableName;
+			return `${this.database}_${this.tableName}`;
 		}
-		return `${this.namespace}_${this.tableName}`;
+		return `${this.database}_${this.namespace}_${this.tableName}`;
 	}
 
-	public static set namespace(value: string): void {
-		this.namespaceStack.push(value);
+	public static set namespaceScope(value: string) {
+		this.namespaceStack.push(toSQLFriendly(value));
 	}
 
-	public static set database(value: string): void {
-		this.databaseStack.push(value);
+	public static set databaseScope(value: string) {
+		this.databaseStack.push(toSQLFriendly(value));
 	}
 
     public static async selectAll<T extends TableRef<K>, K extends Table>(table: T, auth?: Authentication): Promise<K[]>;
@@ -411,9 +414,9 @@ export class Table implements Serializable {
 
     public static registerTable<T extends TableRef<K>, K extends Table>(table: T): void {
 		if (this.namespaceStack.length > 0) {
-			table.namespace = this.namespaceStack[this.namespaceStack.lenght - 1];
+			table.namespace = this.namespaceStack[this.namespaceStack.length - 1];
 		}
-		table.database = this.databaseStack[this.databaseStack - 1];
+		table.database = this.databaseStack[this.databaseStack.length - 1];
 
         if (tableNames.has(table.fullTableName)) {
             throw `Ambiguous name '${table.fullTableName}'. '${table.fullTableName}' was already declared once`;

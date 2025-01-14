@@ -106,7 +106,7 @@ export class RouteManager {
     }
 
     public get(builder: SchemaCallback, route: string, cb: (req: Request, res: Response) => Promise<ResponseContent> | ResponseContent): this {
-        const _ = new OpenAPISchemaBuilder("GET", "/" + this.table.tableName + route, this.table);
+        const _ = new OpenAPISchemaBuilder("GET", `/${this.table.database}/${this.table.namespace ? this.table.namespace + '/' : ''}${route}`, this.table);
         builder(_);
 
         this.routes.push({
@@ -120,7 +120,7 @@ export class RouteManager {
     }
 
     public post(builder: SchemaCallback, route: string, cb: (req: Request, res: Response) => Promise<ResponseContent> | ResponseContent): this {
-        const _ = new OpenAPISchemaBuilder("POST", "/" + this.table.tableName + route, this.table);
+        const _ = new OpenAPISchemaBuilder("POST", `/${this.table.database}/${this.table.namespace ? this.table.namespace + '/' : ''}${route}`, this.table);
         builder(_);
 
         this.routes.push({
@@ -134,7 +134,7 @@ export class RouteManager {
     }
 
     public put(builder: SchemaCallback, route: string, cb: (req: Request, res: Response) => Promise<ResponseContent> | ResponseContent): this {
-        const _ = new OpenAPISchemaBuilder("PUT", "/" + this.table.tableName + route, this.table);
+        const _ = new OpenAPISchemaBuilder("PUT", `/${this.table.database}/${this.table.namespace ? this.table.namespace + '/' : ''}${route}`, this.table);
         builder(_);
 
         this.routes.push({
@@ -148,7 +148,7 @@ export class RouteManager {
     }
 
     public delete(builder: SchemaCallback, route: string, cb: (req: Request, res: Response) => Promise<ResponseContent> | ResponseContent): this {
-        const _ = new OpenAPISchemaBuilder("DELETE", "/" + this.table.tableName + route, this.table);
+        const _ = new OpenAPISchemaBuilder("DELETE", `/${this.table.database}/${this.table.namespace ? this.table.namespace + '/' : ''}${route}`, this.table);
         builder(_);
 
         this.routes.push({

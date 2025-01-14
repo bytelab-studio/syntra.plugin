@@ -19,7 +19,7 @@ export class Relation1T1<K extends Table> extends Column<K> implements IJoinable
     public readonly loadingMethod: RelationLoad;
     private key: number | null;
 
-    public constructor(table: TableRef<K>, flags: ColumnFlags = ColumnFlags.NONE, loadingMethod: RelationLoad = RelationLoad.DIRECT, columnIdName: string = table.tableName + "_id", columnRefName: string = table.tableName) {
+    public constructor(table: TableRef<K>, flags: ColumnFlags = ColumnFlags.NONE, loadingMethod: RelationLoad = RelationLoad.DIRECT, columnIdName: string = table.fullTableName + "_id", columnRefName: string = table.fullTableName) {
         super(SQLType.BIGINT, flags, columnIdName);
         this.refTable = table;
         this.columnRefName = columnRefName;

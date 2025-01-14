@@ -11,6 +11,7 @@ import * as oas from "openapi3-ts/oas31";
 import {SQLType} from "./SQLType";
 import {ContentType} from "./routeManager";
 import {Table, TableRef} from "./table";
+import {toUpperCase} from "./utils";
 
 export class SchemaDefinition {
     public readonly location: string;
@@ -26,7 +27,7 @@ export class SchemaDefinition {
     private static definitions: Map<string, SchemaObject | ReferenceObject> = new Map();
 
     public static of(table: TableRef<Table>, type: "select" | "update" | "create"): SchemaDefinition {
-        return new SchemaDefinition(`${table.tableName}_${type}`);
+        return new SchemaDefinition(`${table.fullTableName}_${type}`);
     }
 
     public static define(name: string, definition: SchemaObject | ReferenceObject): SchemaDefinition {
@@ -77,7 +78,7 @@ export class OpenAPISchemaBuilder {
     public constructor(method: "GET" | "POST" | "PUT" | "DELETE", route: string, group: TableRef<Table>) {
         this.method = method;
         this.route = route.replace(/:(\w+)/g, "{$1}");
-        this.tag = group.tableName.replace(/(^[a-z]|_+[a-z])/g, (m) => m[m.length > 1 ? 1 : 0].toUpperCase());
+        this.tag = toUpperCase(group.database) + "." + (group.namespace ? toUpperCase(group.namespace) + "." : "") + toUpperCase(group.tableName);
         this.summary = "";
         this.parameters = [];
         this.requestBody = undefined;
