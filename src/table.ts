@@ -20,13 +20,11 @@ export enum PermissionLevel {
 }
 
 export class Table implements Serializable {
-    private static namespaceStack: string[] = [];
-	private static databaseStack: string[] = [];
+    public static namespaceStack: (string | null)[] = [];
 
-	declare public static events: Event;
+    declare public static events: Event;
     declare public static routes: RouteManager;
-	declare public static namespace: string | null;
-	declare public static database: string;
+    declare public static namespace: string | null;
 
     public readonly readLevel: PermissionLevel;
     public readonly writeLevel: PermissionLevel;
@@ -39,15 +37,15 @@ export class Table implements Serializable {
         return toSQLFriendly(this.constructor.name);
     }
 
-	public get fullTableName(): string {
-		// @ts-ignore
-		if (!this.constructor.namespace) {
-			// @ts-ignore
-			return `${this.constructor.database}_${this.tableName}`;
-		}
-		// @ts-ignore
-		return `${this.constructor.database}_${this.constructor.namespace}_${this.tableName}`;
-	}
+    public get fullTableName(): string {
+        // @ts-ignore
+        if (!this.constructor.namespace) {
+            // @ts-ignore
+            return `${this.tableName}`;
+        }
+        // @ts-ignore
+        return `${this.constructor.namespace}_${this.tableName}`;
+    }
 
     protected constructor(readLevel: PermissionLevel = PermissionLevel.USER, writeLevel: PermissionLevel = PermissionLevel.USER, deleteLevel: PermissionLevel = PermissionLevel.USER) {
         this.primaryKey = new PrimaryColumn(SQLType.BIGINT, ColumnFlags.AUTO_INCREMENT | ColumnFlags.READONLY, this.tableName + "_id");
@@ -351,20 +349,20 @@ export class Table implements Serializable {
         return toSQLFriendly(this.name);
     }
 
-	public static get fullTableName(): string {
-		if (!this.namespace) {
-			return `${this.database}_${this.tableName}`;
-		}
-		return `${this.database}_${this.namespace}_${this.tableName}`;
-	}
+    public static get fullTableName(): string {
+        if (!this.namespace) {
+            return `${this.tableName}`;
+        }
+        return `${this.namespace}_${this.tableName}`;
+    }
 
-	public static set namespaceScope(value: string) {
-		this.namespaceStack.push(toSQLFriendly(value));
-	}
-
-	public static set databaseScope(value: string) {
-		this.databaseStack.push(toSQLFriendly(value));
-	}
+    public static set namespaceScope(value: string | null) {
+        if (!value) {
+            this.namespaceStack.push(value);
+            return;
+        }
+        this.namespaceStack.push(toSQLFriendly(value));
+    }
 
     public static async selectAll<T extends TableRef<K>, K extends Table>(table: T, auth?: Authentication): Promise<K[]>;
 
@@ -425,10 +423,11 @@ export class Table implements Serializable {
     }
 
     public static registerTable<T extends TableRef<K>, K extends Table>(table: T): void {
-		if (this.namespaceStack.length > 0) {
-			table.namespace = this.namespaceStack[this.namespaceStack.length - 1];
-		}
-		table.database = this.databaseStack[this.databaseStack.length - 1];
+        if (this.namespaceStack.length > 0) {
+            table.namespace = this.namespaceStack[this.namespaceStack.length - 1];
+        } else {
+            table.namespace = null;
+        }
 
         if (tableNames.has(table.fullTableName)) {
             throw `Ambiguous name '${table.fullTableName}'. '${table.fullTableName}' was already declared once`;

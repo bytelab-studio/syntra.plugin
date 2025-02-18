@@ -91,6 +91,16 @@ export type Route = {
 
 type SchemaCallback = (builder: OpenAPISchemaBuilder) => void;
 
+function buildPath(namespace: string|null, table: string, route: string): string {
+    let res: string = "/";
+    if (namespace) {
+        res += namespace + "/";
+    }
+    res += table;
+    res += route;
+    return res;
+}
+
 export class RouteManager {
     public enableGetAllRoute: boolean = true;
     public enableGetSingleRoute: boolean = true;
@@ -107,7 +117,7 @@ export class RouteManager {
     }
 
     public get(builder: SchemaCallback, route: string, cb: (req: Request, res: Response) => Promise<ResponseContent> | ResponseContent): this {
-        const _ = new OpenAPISchemaBuilder("GET", `/${this.table.database}/${this.table.namespace ? this.table.namespace + '/' : ''}${route}`, this.table);
+        const _ = new OpenAPISchemaBuilder("GET", buildPath(this.table.namespace, this.table.tableName, route), this.table);
         builder(_);
 
         this.routes.push({
@@ -121,7 +131,7 @@ export class RouteManager {
     }
 
     public post(builder: SchemaCallback, route: string, cb: (req: Request, res: Response) => Promise<ResponseContent> | ResponseContent): this {
-        const _ = new OpenAPISchemaBuilder("POST", `/${this.table.database}/${this.table.namespace ? this.table.namespace + '/' : ''}${route}`, this.table);
+        const _ = new OpenAPISchemaBuilder("POST", buildPath(this.table.namespace, this.table.tableName, route), this.table);
         builder(_);
 
         this.routes.push({
@@ -135,7 +145,7 @@ export class RouteManager {
     }
 
     public put(builder: SchemaCallback, route: string, cb: (req: Request, res: Response) => Promise<ResponseContent> | ResponseContent): this {
-        const _ = new OpenAPISchemaBuilder("PUT", `/${this.table.database}/${this.table.namespace ? this.table.namespace + '/' : ''}${route}`, this.table);
+        const _ = new OpenAPISchemaBuilder("PUT", buildPath(this.table.namespace, this.table.tableName, route), this.table);
         builder(_);
 
         this.routes.push({
@@ -149,9 +159,8 @@ export class RouteManager {
     }
 
     public delete(builder: SchemaCallback, route: string, cb: (req: Request, res: Response) => Promise<ResponseContent> | ResponseContent): this {
-        const _ = new OpenAPISchemaBuilder("DELETE", `/${this.table.database}/${this.table.namespace ? this.table.namespace + '/' : ''}${route}`, this.table);
+        const _ = new OpenAPISchemaBuilder("DELETE", buildPath(this.table.namespace, this.table.tableName, route), this.table);
         builder(_);
-
         this.routes.push({
             schema: _,
             route: route,

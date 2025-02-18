@@ -5,6 +5,8 @@ import {Relation1T1, RelationLoad} from "./relation";
 import {ContentType} from "./routeManager";
 import {SchemaDefinition} from "./schema";
 
+Table.namespaceScope = "core";
+
 @table()
 export class Resource extends Table {
     public constructor() {
